@@ -25,7 +25,7 @@ Once the response is received from the unit, the code in the include file (ampin
 
 ## Integration into Home Assistant
 
-The code creates various sensors in the HA instance, many of which are boolean flags mapped to their function. Play around and build a test dashboard to see what works for you. The YAML and ampinvt.h files go into your esphome directory.
+The code creates various sensors in the HA instance, many of which are boolean flags mapped to their function. Play around and build a test dashboard to see what works for you. The YAML and ampinvt.h files go into your esphome directory. You can check the uart read and writes by watching the logs for the ESP32 device in ESPhome; you will see a write string that should be followed by a 37 byte response string. If that doesn't occur, you have an issue with the hardware. I did manage to somehow destroy a HW-0519 during the creation of this so I discovered that problem along the way, where the write was being sent but no receive string was logging.
 
 # Credits
 
