@@ -1,0 +1,454 @@
+  esphome:
+    name: {Your Device Name Here}
+    comment: {Your Comment Here}
+    includes:
+      - ampinvt.h
+  
+  esp32:
+    board: esp32dev
+    framework:
+      version: recommended
+      type: arduino
+  
+  logger:
+  #  level: DEBUG
+  
+  wifi:
+    manual_ip:
+      static_ip: {Your IP Here}
+      gateway: {Your Gateway Here}
+      subnet: {Your Subnet Here}
+      dns1: {Your DNS Server Here}
+      dns2: 0.0.0.0
+    ap:
+      ssid: "Fallback_SolarMonitor"
+      password: ""
+      ap_timeout: 1min
+    domain: .local
+    reboot_timeout: 15min
+    power_save_mode: NONE
+    fast_connect: false
+    output_power: 20.0
+    networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+      priority: 0.0
+    use_address: {Your IP Here}
+  
+  captive_portal:
+  
+  api:
+    password: !secret api_password
+    port: 6053
+    reboot_timeout: 15min
+  ota:
+    password: !secret ota_password
+    safe_mode: true
+    port: 8266
+    
+  uart:
+    id: uart_bus
+    tx_pin: 17 # Yellow Wire - MPPT UART Transmit
+    rx_pin: 16 # Green Wire - MPPT UART Receive
+    rx_buffer_size: 2048
+    baud_rate: 9600
+    parity: NONE
+    stop_bits: 1
+    debug:
+  
+  time:
+    - platform: homeassistant
+      id: esptime
+      on_time:
+        - seconds: 0,30
+          then:
+            - uart.write: [ 0x01, 0xB3, 0x01, 0x00, 0x00, 0x00, 0x00, 0xB5 ] # Reads only real-time data
+  #          - uart.write: [ 0x01, 0xB2, 0x01, 0x00, 0x00, 0x00, 0x00, 0xB4 ] # Reads only parameter settings
+  
+  sensor:
+  - platform: custom
+    lambda: |-
+      auto ampinvtsensors = new ampinvtsensor(id(uart_bus));
+      App.register_component(ampinvtsensors);
+      return {\
+      ampinvtsensors->ampinvt_op_status, \
+      ampinvtsensors->ampinvt_battery_status, \
+      ampinvtsensors->ampinvt_fan_status, \
+      ampinvtsensors->ampinvt_overheat_status, \
+      ampinvtsensors->ampinvt_dcoutput_status, \
+      ampinvtsensors->ampinvt_inttemp1_status, \
+      ampinvtsensors->ampinvt_inttemp2_status, \
+      ampinvtsensors->ampinvt_exttemp_status, \
+      ampinvtsensors->ampinvt_chg_status, \
+      ampinvtsensors->ampinvt_equalchg_status, \
+      ampinvtsensors->ampinvt_track_status, \
+      ampinvtsensors->ampinvt_floatchg_status, \
+      ampinvtsensors->ampinvt_chgcurrentlimit_status, \
+      ampinvtsensors->ampinvt_chgderating_status, \
+      ampinvtsensors->ampinvt_remoteprohibchg_status, \
+      ampinvtsensors->ampinvt_pvovervolt_status, \
+      ampinvtsensors->ampinvt_chgoutputrelay_status, \
+      ampinvtsensors->ampinvt_loadoutput_status, \
+      ampinvtsensors->ampinvt_fanrelay_status, \
+      ampinvtsensors->ampinvt_overchgprotect_status, \
+      ampinvtsensors->ampinvt_overvoltprotect_status, \
+      ampinvtsensors->ampinvt_pv_voltage, \
+      ampinvtsensors->ampinvt_battery_voltage, \
+      ampinvtsensors->ampinvt_charge_current, \
+      ampinvtsensors->ampinvt_mppt_temperature, \
+      ampinvtsensors->ampinvt_battery_temperature, \
+      ampinvtsensors->ampinvt_today_yield, \
+      ampinvtsensors->ampinvt_generation_total, \
+      };
+
+    sensors:
+    - name: "Operating Status"
+      id: ampinvt_op_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_op_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_op_status_text_sensor).publish_state("Abnormal");
+              }
+    - name: "Battery Status"
+      id: ampinvt_battery_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_battery_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_battery_status_text_sensor).publish_state("OD Protection On");
+              }
+    - name: "Fan Status"
+      id: ampinvt_fan_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_fan_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_fan_status_text_sensor).publish_state("Fan Failure");
+              }
+    - name: "Overheat Status"
+      id: ampinvt_overheat_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_overheat_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_overheat_status_text_sensor).publish_state("OT Protection On");
+              }
+    - name: "DC Output Status"
+      id: ampinvt_dcoutput_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_dcoutput_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_dcoutput_status_text_sensor).publish_state("DC Output Short");
+              }
+    - name: "Internal Temperature 1 Status"
+      id: ampinvt_inttemp1_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_inttemp1_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_inttemp1_status_text_sensor).publish_state("Fault");
+              }
+    - name: "Internal Temperature 2 Status"
+      id: ampinvt_inttemp2_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_inttemp2_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_inttemp2_status_text_sensor).publish_state("Fault");
+              }
+    - name: "External Temperature Status"
+      id: ampinvt_exttemp_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_exttemp_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_exttemp_status_text_sensor).publish_state("Fault");
+              }
+    - name: "Charging Status"
+      id: ampinvt_chg_status
+      icon: mdi:battery-charging
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_chg_status_text_sensor).publish_state("Not Charging");
+              }
+              else  {
+                id(ampinvt_chg_status_text_sensor).publish_state("Charging");
+              }
+    - name: "Equal Charging Status"
+      id: ampinvt_equalchg_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_equalchg_status_text_sensor).publish_state("Not Equalising");
+              }
+              else  {
+                id(ampinvt_equalchg_status_text_sensor).publish_state("Equalising");
+              }
+    - name: "MPPT Tracking Status"
+      id: ampinvt_track_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_track_status_text_sensor).publish_state("Not Tracking");
+              }
+              else  {
+                id(ampinvt_track_status_text_sensor).publish_state("Tracking");
+              }
+    - name: "Float Charging Status"
+      id: ampinvt_floatchg_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_floatchg_status_text_sensor).publish_state("Not Float Charging");
+              }
+              else  {
+                id(ampinvt_floatchg_status_text_sensor).publish_state("Float Charging");
+              }
+    - name: "Charge Current Limit Status"
+      id: ampinvt_chgcurrentlimit_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_chgcurrentlimit_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_chgcurrentlimit_status_text_sensor).publish_state("Charge Current Limit");
+              }
+    - name: "Charge Derating Status"
+      id: ampinvt_chgderating_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_chgderating_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_chgderating_status_text_sensor).publish_state("Charge Derated");
+              }
+    - name: "Remote Prohibit Charging Status"
+      id: ampinvt_remoteprohibchg_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_remoteprohibchg_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_remoteprohibchg_status_text_sensor).publish_state("Remote denial");
+              }
+    - name: "Panel Overvoltage Status"
+      id: ampinvt_pvovervolt_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_pvovervolt_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_pvovervolt_status_text_sensor).publish_state("PV Overvoltage");
+              }
+    - name: "Charging Output Relay Status"
+      id: ampinvt_chgoutputrelay_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_chgoutputrelay_status_text_sensor).publish_state("Closed");
+              }
+              else  {
+                id(ampinvt_chgoutputrelay_status_text_sensor).publish_state("Open");
+              }
+    - name: "Load Output Status"
+      id: ampinvt_loadoutput_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_loadoutput_status_text_sensor).publish_state("Closed");
+              }
+              else  {
+                id(ampinvt_loadoutput_status_text_sensor).publish_state("Open");
+              }
+    - name: "Fan Relay Status"
+      id: ampinvt_fanrelay_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_fanrelay_status_text_sensor).publish_state("Closed");
+              }
+              else  {
+                id(ampinvt_fanrelay_status_text_sensor).publish_state("Open");
+              }
+    - name: "Overcharge Protection Status"
+      id: ampinvt_overchgprotect_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_overchgprotect_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_overchgprotect_status_text_sensor).publish_state("Overcharge Protection On");
+              }
+    - name: "Overvoltage Protection Status"
+      id: ampinvt_overvoltprotect_status
+      on_value:
+        then:
+          - lambda: |-
+              if(x==0) {
+                id(ampinvt_overvoltprotect_status_text_sensor).publish_state("Normal");
+              }
+              else  {
+                id(ampinvt_overvoltprotect_status_text_sensor).publish_state("Overvoltage Protection On");
+              }
+
+    - name: "Solar Panel Voltage"
+      id: ampinvt_pv_voltage
+      unit_of_measurement: V
+      accuracy_decimals: 1
+      icon: mdi:flash
+      filters:
+        - multiply: 0.1
+    - name: "Solar Battery Voltage"
+      id: ampinvt_battery_voltage
+      unit_of_measurement: V
+      accuracy_decimals: 2
+      icon: mdi:flash
+      filters:
+        - multiply: 0.01
+    - name: "Solar Charge Current"
+      id: ampinvt_charge_current
+      unit_of_measurement: A
+      accuracy_decimals: 2
+      icon: mdi:current-dc
+      filters:
+      - multiply: 0.01
+    - name: "Solar Controller Internal Temperature"
+      id: ampinvt_mppt_temperature
+      unit_of_measurement: °C
+      accuracy_decimals: 1
+      filters:
+      - multiply: 0.1
+    - name: "Solar Battery Temperature"
+      id: ampinvt_battery_temperature
+      unit_of_measurement: °C
+      accuracy_decimals: 1
+      filters:
+        - multiply: 0.1
+    - name: "Solar Daily Yield"
+      id: ampinvt_today_yield
+      unit_of_measurement: W
+      accuracy_decimals: 1
+      icon: mdi:solar-power
+    - name: "Solar Total Yield"
+      id: ampinvt_generation_total
+      unit_of_measurement: KW
+      device_class: energy #for use in energy dashboard
+      state_class: total_increasing #for use in energy dashboard
+      accuracy_decimals: 1
+      icon: mdi:solar-power
+      filters:
+        - multiply: 0.001
+
+  text_sensor:
+  - platform: template
+    name: "Ampinvt Operating Status"
+    id: ampinvt_op_status_text_sensor
+  - platform: template
+    name: "Ampinvt Battery Status"
+    id: ampinvt_battery_status_text_sensor
+  - platform: template
+    name: "Ampinvt Fan Status"
+    id: ampinvt_fan_status_text_sensor
+  - platform: template
+    name: "Ampinvt Overheat Status"
+    id: ampinvt_overheat_status_text_sensor
+  - platform: template
+    name: "Ampinvt DC Output Status"
+    id: ampinvt_dcoutput_status_text_sensor
+  - platform: template
+    name: "Ampinvt Internal Temp #1 Status"
+    id: ampinvt_inttemp1_status_text_sensor
+  - platform: template
+    name: "Ampinvt Internal Temp #2 Status"
+    id: ampinvt_inttemp2_status_text_sensor
+  - platform: template
+    name: "Ampinvt External Temperature Status"
+    id: ampinvt_exttemp_status_text_sensor
+  - platform: template
+    name: "Ampinvt Charging Status"
+    id: ampinvt_chg_status_text_sensor
+  - platform: template
+    name: "Ampinvt Equalising Status"
+    id: ampinvt_equalchg_status_text_sensor
+  - platform: template
+    name: "Ampinvt MPPT Tracking Status"
+    id: ampinvt_track_status_text_sensor
+  - platform: template
+    name: "Ampinvt Float Charging Status"
+    id: ampinvt_floatchg_status_text_sensor
+  - platform: template
+    name: "Ampinvt Charge Current Limit Status"
+    id: ampinvt_chgcurrentlimit_status_text_sensor
+  - platform: template
+    name: "Ampinvt Charge Derating Status"
+    id: ampinvt_chgderating_status_text_sensor
+  - platform: template
+    name: "Ampinvt Remote Prohib Status"
+    id: ampinvt_remoteprohibchg_status_text_sensor
+  - platform: template
+    name: "Ampinvt Panel Overvoltage Status"
+    id: ampinvt_pvovervolt_status_text_sensor
+  - platform: template
+    name: "Ampinvt Charging Output Relay Status"
+    id: ampinvt_chgoutputrelay_status_text_sensor
+  - platform: template
+    name: "Ampinvt Load Output Status"
+    id: ampinvt_loadoutput_status_text_sensor
+  - platform: template
+    name: "Ampinvt Fan Relay Status"
+    id: ampinvt_fanrelay_status_text_sensor
+  - platform: template
+    name: "Ampinvt Overcharge Protection Status"
+    id: ampinvt_overchgprotect_status_text_sensor
+  - platform: template
+    name: "Ampinvt Overvoltage Protection Status"
+    id: ampinvt_overvoltprotect_status_text_sensor
+
+  switch:
+    - platform: restart
+      name: "Solar Controller Restart"
+      id: solar_controller_restart
