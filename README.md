@@ -1,4 +1,4 @@
-# Integrate your Ampinvt solar controller with you home automation solution via ESPhome.
+# Integrate your Ampinvt solar controller with your home automation solution via ESPhome.
 
 This project is based on a combination of hardware and software to facilitate obtaining, reading and processing the output from the Ampinvt solar controllers.
 
