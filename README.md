@@ -25,7 +25,7 @@ Once the response is received from the unit, the code in the include file (ampin
 
 ## Integration into Home Assistant
 
-The code creates various sensors in the HA instance, many of which are boolean flags mapped to their function. Play around and build a test dashboard to see what works for you.
+The code creates various sensors in the HA instance, many of which are boolean flags mapped to their function. Play around and build a test dashboard to see what works for you. The YAML and ampinvt.h files go into your esphome directory.
 
 # Credits
 
