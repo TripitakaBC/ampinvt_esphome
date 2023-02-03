@@ -38,7 +38,8 @@
   captive_portal:
   
   api:
-    password: !secret api_password
+    encryption:
+      key: !secret apikey
     port: 6053
     reboot_timeout: 15min
   ota:
