@@ -127,25 +127,17 @@ class ampinvtsensor : public PollingComponent, public Sensor, public UARTDevice 
         id(ampinvt_charge_current).publish_state(charge_current_value.UInt16);
 
         // Necessary to accomodate negative celcius temps in unheated installations        
-        int16_t mppt_temperature_value;
-          if (bytes[12] >= 0x10) {
-            mppt_temperature_value = int(
-              (signed char)(bytes[13] * -1));
-          } else {
-            mppt_temperature_value = int(
-              (signed char)(bytes[13]));
-          }
+        int16_t mppt_temperature_value = int16_t(bytes[13] | (bytes[12] << 8));
+        if (mppt_temperature_value & 0x8000) {
+          mppt_temperature_value |= ~0xFFFF;
+        }
         id(ampinvt_mppt_temperature).publish_state(mppt_temperature_value);
         
         // Necessary to accomodate negative celcius temps in unheated installations
-        int16_t battery_temperature_value;
-          if (bytes[16] >= 0x10) {
-            battery_temperature_value = int(
-              (signed char)(bytes[17] * -1));
-          } else {
-            battery_temperature_value = int(
-              (signed char)(bytes[17]));
-          }
+        int16_t battery_temperature_value = int16_t(bytes[17] | (bytes[16] << 8));
+        if (battery_temperature_value & 0x8000) {
+          battery_temperature_value |= ~0xFFFF;
+        }
         id(ampinvt_battery_temperature).publish_state(battery_temperature_value);
 
         uint32_t today_yield_value = int(
